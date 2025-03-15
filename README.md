@@ -7,8 +7,9 @@ This is the source code for the paper "ReSa2: A Two - Stage Retrieval - Sampling
 <p align="center">
   <img src="img/e1.png" alt="Description" width="300">
 </p>
-# Appendix
+ 
 
+### Appendix 
 ## Instruction
 In this experiment, we replicated a series of methods and made certain adjustments to their parameters and sequences according to our evaluation criteria to achieve their best performance.
 
