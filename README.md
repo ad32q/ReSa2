@@ -25,6 +25,8 @@ For the direct sampling of TopK hard negative samples, we randomly sampled from 
 ## TriSampler
 Regarding TriSampler, there are two different interpretations of the quasi-triangle principle mentioned in the original method. We replicated the method according to these two different interpretations and adopted the approach that can effectively screen out samples. In this approach, we denote it as T1. The setting of $\theta$ in this method is slightly different from the other one.
 
+Regarding TriSampler, there are two different interpretations of the quasi - triangle principle mentioned in the original method. We replicated the method based on these two different interpretations and adopted the approach that can effectively screen out samples. In this approach, we denote it as T1. The setting of $\theta$ in this method is slightly different from the other one.
+
 We denote $\mathbf{V}_{d^+} - \mathbf{V}_q$ as $\mathbf{V}_1$ and $\mathbf{V}_{d^-} - \mathbf{V}_q$ as $\mathbf{V}_2$. This can be expressed by the following formulas:
 
 \[
@@ -35,7 +37,7 @@ We denote $\mathbf{V}_{d^+} - \mathbf{V}_q$ as $\mathbf{V}_1$ and $\mathbf{V}_{d
 \mathbf{V}_2 = \mathbf{V}_{d^-} - \mathbf{V}_q
 \]
 
-Next, we calculate the angle $\alpha$ between $\mathbf{V}_1$ and $\mathbf{V}_2$. According to the dot-product formula of vectors $\mathbf{a} \cdot \mathbf{b}=\|\mathbf{a}\| \|\mathbf{b}\| \cos\theta$ (where $\theta$ is the angle between $\mathbf{a}$ and $\mathbf{b}$), we can obtain:
+Next, we calculate the angle $\alpha$ between $\mathbf{V}_1$ and $\mathbf{V}_2$. According to the dot - product formula of vectors $\mathbf{a} \cdot \mathbf{b}=\|\mathbf{a}\| \|\mathbf{b}\| \cos\theta$ (where $\theta$ is the angle between $\mathbf{a}$ and $\mathbf{b}$), we can obtain:
 
 \[
 \alpha = \arccos\left(\frac{\mathbf{V}_1 \cdot \mathbf{V}_2}{\|\mathbf{V}_1\| \|\mathbf{V}_2\|}\right)
@@ -44,12 +46,10 @@ Next, we calculate the angle $\alpha$ between $\mathbf{V}_1$ and $\mathbf{V}_2$.
 The other approach is denoted as T2. The calculation of $\theta$ in this approach is as follows:
 
 \[
-\theta=\left|\arccos\left(\frac{s(\mathbf{v}_q,\mathbf{v}_{d^+})}{\|\mathbf{v}_q\|\cdot\|\mathbf{v}_{d^+}\|}\right)-\arccos\left(\frac{s(\mathbf{v}_q,\mathbf{v}_{d^-})}{\|\mathbf{v}_q\|\cdot\|\mathbf{v}_{d^-}\|}\right)\right|
+\theta=\left|\arccos\left(\frac{s(\mathbf{v}_q,\mathbf{v}_{d^+})}{\|\mathbf{v}_q\| \cdot \|\mathbf{v}_{d^+}\|}\right)-\arccos\left(\frac{s(\mathbf{v}_q,\mathbf{v}_{d^-})}{\|\mathbf{v}_q\| \cdot \|\mathbf{v}_{d^-}\|}\right)\right|
 \]
 
 We also solely employed these two principles to screen negative samples to examine the effectiveness. The specific results are presented in Table 2. $\theta$ is set to 60 degrees for all cases. 
-
-
 ## SimANS
 For SimANS, we adopted the same settings as the original method, directly extracting the final negative samples from the hard negative samples ranked among the top 100 in the ANN according to the probability distribution of the similarity score distance, and reported this in the paper. Meanwhile, through the ablation of TriSampler and our method, we found that compared with directly extracting the final samples, the probability distribution of the similarity score distance proposed by SimANS can achieve better results when further sampling after extracting the transition samples.
 
