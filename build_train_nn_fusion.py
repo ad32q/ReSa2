@@ -9,22 +9,22 @@ import math
 import random
 
 def load_ranking(rank_file, relevance, n_sample, depth, tau=0.5):
-    """从排序文件中加载数据，并按概率选择负样本
+    """Load data from the ranking file and select negative samples based on probability
     
     Args:
-        rank_file (str): 排序文件路径，格式为[query, _, paragraph, _, score, _]
-        relevance (dict): 每个查询对应的正样本段落集合 {q: {positive_paragraphs}}
-        n_sample (int): 需要采样的负样本数量
-        depth (int): 考虑负样本的最大排名深度
-        tau (float): 概率计算中的温度系数，默认值1/4
+        rank_file (str): Path to the ranking file, format: [query, _, paragraph, _, score, _]
+        relevance (dict): Dictionary mapping queries to sets of relevant passages {q: {positive_paragraphs}}
+        n_sample (int): Number of negative samples to select
+        depth (int): Maximum ranking depth to consider for negative samples
+        tau (float): Temperature factor in probability computation, default is 1/4
     
     Yields:
-        tuple: (当前查询, 正样本列表, 采样的负样本列表)
+        tuple: (query, list of positive samples, list of sampled negative samples)
     """
     with open(rank_file) as rf:
         lines = iter(rf)
         
-        # 初始化第一个查询
+        # Initialize first query
         try:
             parts = next(lines).strip().split()
             curr_q, curr_p = parts[0], parts[2]
@@ -33,39 +33,39 @@ def load_ranking(rank_file, relevance, n_sample, depth, tau=0.5):
             pos_scores = [curr_score] if curr_p in relevance.get(curr_q, set()) else []
             negatives = [] if curr_p in relevance.get(curr_q, set()) else [(curr_p, curr_score)]
         except StopIteration:
-            return  # 空文件直接返回
+            return  # Return immediately if the file is empty
 
         def _sample_negatives(pos_scores, negatives):
-            """根据正负样本得分生成采样结果"""
-            # 无正样本时回退随机采样
+            """Generate sampled negatives based on positive and negative sample scores"""
+            # If no positive samples, fallback to random selection
             if not pos_scores:
                 candidates = [p for p, _ in negatives[:depth]]
                 return random.sample(candidates, min(n_sample, len(candidates)))
             
-            # 计算概率权重
-            pos_max = max(pos_scores)  # 使用最高正样本得分作为基准
+            # Compute probability weights
+            pos_max = max(pos_scores)  # Use the highest positive sample score as a reference
             candidates = negatives[:depth]
             if not candidates:
                 return []
             
-            # 计算指数权重
+            # Compute exponential weights
             weights = [math.exp(-(s - pos_max)**2 * tau) for _, s in candidates]
             total = sum(weights)
             
-            # 处理全零权重情况
+            # Handle case where all weights are zero
             if total <= 1e-8:
                 return random.sample([p for p, _ in candidates], min(n_sample, len(candidates)))
             
-            # 概率归一化
+            # Normalize probabilities
             probs = [w / total for w in weights]
             
-            # 无放回加权采样
+            # Weighted sampling without replacement
             sampled = []
             remain_indices = list(range(len(candidates)))
             remain_probs = probs.copy()
             
             for _ in range(min(n_sample, len(candidates))):
-                # 轮盘赌选择
+                # Roulette wheel selection
                 r = random.uniform(0, sum(remain_probs))
                 accum = 0
                 for i in range(len(remain_probs)):
@@ -73,41 +73,41 @@ def load_ranking(rank_file, relevance, n_sample, depth, tau=0.5):
                     if accum >= r:
                         chosen_idx = remain_indices[i]
                         sampled.append(candidates[chosen_idx][0])
-                        # 移除已选样本
+                        # Remove selected sample
                         del remain_indices[i]
                         del remain_probs[i]
-                        # 重新归一化剩余概率
+                        # Renormalize remaining probabilities
                         if remain_probs:
                             sum_remain = sum(remain_probs)
                             remain_probs = [p/sum_remain for p in remain_probs]
                         break
             return sampled
 
-        # 主循环处理后续行
+        # Process remaining lines
         while True:
             try:
                 parts = next(lines).strip().split()
                 q, p = parts[0], parts[2]
                 score = float(parts[4])
                 
-                # 遇到新查询时生成结果
+                # Generate results when encountering a new query
                 if q != curr_q:
                     sampled = _sample_negatives(pos_scores, negatives)
                     yield curr_q, relevance.get(curr_q, []), sampled
                     
-                    # 重置状态
+                    # Reset state
                     curr_q = q
                     pos_scores = [score] if p in relevance.get(q, set()) else []
                     negatives = [] if p in relevance.get(q, set()) else [(p, score)]
                 else:
-                    # 累积正负样本得分
+                    # Accumulate positive and negative sample scores
                     if p in relevance.get(q, set()):
                         pos_scores.append(score)
                     else:
                         negatives.append((p, score))
                         
             except StopIteration:
-                # 处理最后一个查询
+                # Process last query
                 sampled = _sample_negatives(pos_scores, negatives)
                 yield curr_q, relevance.get(curr_q, []), sampled
                 return
