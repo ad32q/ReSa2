@@ -6,7 +6,6 @@ import logging
 import time
 import threading
 
-# 配置日志记录，设置日志级别为DEBUG以获取更详细的信息
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
