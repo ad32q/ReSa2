@@ -2,21 +2,20 @@ import sys
 import math
 from scipy import stats
 
-
 def calculate_metrics(qrels_file_path, output_results_path):
-    # 读取qrel文件（支持多级相关性）
+    # Read qrel file (supports graded relevance)
     qrel = {}
     with open(qrels_file_path, 'r', encoding='utf8') as f:
         for line in f:
             topicid, _, docid, rel = line.strip().split()
             rel_score = int(rel)
-            if rel_score < 0:  # 通常负值表示不相关
+            if rel_score < 0:  # Negative values usually indicate non-relevance
                 continue
             if topicid not in qrel:
                 qrel[topicid] = {}
             qrel[topicid][docid] = rel_score
 
-    # 读取结果文件并排序
+    # Read results file and sort by rank
     rankings = {}
     with open(output_results_path, 'r') as file:
         for line in file:
@@ -32,11 +31,11 @@ def calculate_metrics(qrels_file_path, output_results_path):
                 rankings[qid] = []
             rankings[qid].append((docid, rank))
     
-    # 按rank升序排序（rank=1是第一名）
+    # Sort by rank in ascending order (rank=1 is the top result)
     for qid in rankings:
         rankings[qid].sort(key=lambda x: x[1])
 
-    # 初始化指标
+    # Initialize metrics
     query_num = 0
     skipped_queries = 0
     mrr_ten_score = 0.0
@@ -51,9 +50,9 @@ def calculate_metrics(qrels_file_path, output_results_path):
         'ndcg': {}
     }
 
-    # 处理每个查询
+    # Process each query
     for query in rankings:
-        # 跳过不在qrel中的查询
+        # Skip queries not in qrel
         if query not in qrel:
             skipped_queries += 1
             continue
@@ -61,14 +60,14 @@ def calculate_metrics(qrels_file_path, output_results_path):
         relevant_info = qrel[query]
         total_relevant = len(relevant_info)
         
-        # 跳过没有相关文档的查询
+        # Skip queries with no relevant documents
         if total_relevant == 0:
             skipped_queries += 1
             continue
 
         query_num += 1
         
-        # MRR@10计算
+        # MRR@10 calculation
         mrr_10 = 0.0
         for pos, (doc, _) in enumerate(rankings[query][:10], 1):
             if doc in relevant_info:
@@ -77,7 +76,7 @@ def calculate_metrics(qrels_file_path, output_results_path):
         mrr_ten_score += mrr_10
         qid_metrics['mrr'][query] = mrr_10
 
-        # Recall计算
+        # Recall calculation
         hit_all = 0
         hit_50 = 0
         hit_100 = 0
@@ -104,13 +103,13 @@ def calculate_metrics(qrels_file_path, output_results_path):
             '100': recall_100
         }
 
-        # nDCG@10计算
+        # nDCG@10 calculation
         dcg = 0.0
         for pos, (doc, _) in enumerate(rankings[query][:10], 1):
             rel = relevant_info.get(doc, 0)
-            dcg += rel / math.log2(pos + 1)  # 折扣因子从第2位开始
+            dcg += rel / math.log2(pos + 1)  # Discount factor starts from position 2
         
-        # 计算理想DCG
+        # Compute ideal DCG
         ideal_scores = sorted(relevant_info.values(), reverse=True)[:10]
         idcg = sum(rel / math.log2(i+1) for i, rel in enumerate(ideal_scores, 1))
         
@@ -118,7 +117,7 @@ def calculate_metrics(qrels_file_path, output_results_path):
         ndcg_10_score += ndcg_10
         qid_metrics['ndcg'][query] = ndcg_10
 
-    # 计算平均值
+    # Compute averages
     avg_mrr = mrr_ten_score / query_num if query_num > 0 else 0
     avg_recall_all = recall_all_score / query_num if query_num > 0 else 0
     avg_recall_50 = recall_50_score / query_num if query_num > 0 else 0
@@ -141,12 +140,10 @@ def evaluate_single_file(qrels_path, result_path):
     
     print("\nEvaluation Results:")
     print(f"- MRR@10: {metrics['mrr']:.4f}")
-    print(f"- Recall@All: {metrics['recall_all']:.4f}")
+    print(f"- Recall@1000: {metrics['recall_all']:.4f}")
     print(f"- Recall@50: {metrics['recall_50']:.4f}") 
     print(f"- Recall@100: {metrics['recall_100']:.4f}")
     print(f"- nDCG@10: {metrics['ndcg_10']:.4f}")
-    print(f"- Evaluated Queries: {metrics['query_num']}")
-    print(f"- Skipped Queries: {metrics['skipped']}")
 
 
 if __name__ == '__main__':
