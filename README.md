@@ -9,6 +9,52 @@ This is the source code for the paper "ReSa2: A Two - Stage Retrieval - Sampling
 </p>
  
 
+# Repository for Our Paper's Code
+
+## Data
+
+You can download the required dataset from the following webpage:  
+[MS MARCO Datasets](https://microsoft.github.io/msmarco/Datasets.html)
+
+---
+
+## Training the stdDR Model
+
+We use the document retrieval toolkit [Tevatron](https://github.com/texttron/tevatron) to train a dense retriever and evaluate the effectiveness of sampling negative samples. Based on the `bert-base-uncased` model, stdDPR is trained on the official triplets provided by the MS MARCO Passage Ranking dataset.
+
+### Steps:
+1. Run `setup_experiment.sh` to encode some data as preparation.
+2. Execute `train_dr.sh` to train the stdDPR model for sampling.
+
+---
+
+## ReSa2 Sampling
+
+1. **First-Stage Retrieval:** We perform the first-stage retrieval using FAISS, retrieving the top-1000 passages for each query.
+2. **Negative Sampling:** We sample from the top-1000 using a probabilistic distribution ($p_{d^{-}}^{(q)}$), obtaining a subset of $K' = 500$.
+3. **Second-Stage Retrieval:** We use the positive sample reuse retriever as a filter to reposition the negative samples in the sample pool obtained from the previous stage. The top-75 samples are selected, and seven negative samples are randomly chosen for each query to update the training set.
+4. **Model Training:** Finally, we use the pre-trained language model `bert-base-uncased` to train a new model with the newly sampled negative samples for four epochs.
+
+### Execution Steps:
+- Run `ReSa2_sampling.sh` to complete the first-stage retrieval, sampling, and second-stage retrieval.
+- Execute `train_and_test.sh` to finalize the sampling, train a new model, perform retrieval, and evaluate the results.
+
+---
+
+Enjoy using our code, and feel free to open an issue if you have any questions!
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Appendix 
 ## Instruction
 In this experiment, we replicated a series of methods and made certain adjustments to their parameters and sequences according to our evaluation criteria to achieve their best performance.
