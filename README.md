@@ -5,7 +5,7 @@ This is the source code for the paper "ReSa2: A Two - Stage Retrieval - Sampling
   <img src="img/in.png" alt="Description" width="300">
 </p>
 <p align="center">
-  <img src="img/e1.png" alt="Description" width="300">
+  <img src="img/e4.png" alt="Description" width="300">
 </p>
  
 
