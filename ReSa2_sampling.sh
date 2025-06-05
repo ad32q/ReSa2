@@ -21,8 +21,8 @@ CUDA_VISIBLE_DEVICES=${gpu_id} python -m tevatron.driver.encode --output_dir=tem
                                                          --per_device_eval_batch_size 512 \
                                                          --encode_in_path ./output/corpus_128 \
                                                          --encoded_save_path ${save_path}/corpus_128.pt
-# 
-# query_dir=./output
+
+query_dir=./output
 CUDA_VISIBLE_DEVICES=${gpu_id} python -m tevatron.driver.encode --output_dir=temp \
                                                        --model_name_or_path ${model_dir} \
                                                        --fp16 \
