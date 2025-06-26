@@ -1,6 +1,6 @@
 This is the source code for the paper "ReSa2: A Two - Stage Retrieval - Sampling Algorithm for Negative Sampling in Dense Retrieval".  Tanonymization testing process and gain a deeper understanding of how it handles negative sampling to enhance the retrieval performance.
 <p align="center">
-  <img src="img/in.png" alt="Description" width="300">
+  <img src="img/flow.png" alt="Description" width="300">
 </p>
 <p align="center">
   <img src="img/e4.png" alt="Description" width="300">
