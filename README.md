@@ -74,7 +74,19 @@ Enjoy using our code, and feel free to open an issue if you have any questions!
 |  | DPR+SimANS | 0.27723 | 0.35849 | 0.37551 | 0.38712 | 0.3961 |
 |  | DPR+ReSa2 | **0.30070** | **0.38644** | **0.40366** | **0.41582** | **0.42460** |
 
+<p align="center">
+  <img src="img/negative_sample_classification.png" alt="Description" width="300">
+</p>
 
+<p align="center">
+  <img src="img/LLM.png" alt="Description" width="300">
+</p>
+
+ <p align="center">
+  <img src="img/LLM2.png" alt="Description" width="300">
+</p>
+ 
+ 
 # Appendix
 
 ## Instruction
