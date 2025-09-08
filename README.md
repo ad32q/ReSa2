@@ -271,7 +271,7 @@ The retrieval performance of HNSW relies on a hierarchical navigation mechanism,
 
 Two-stage sampling involves the following steps with distinct time complexities:
 
-- **First-stage sampling**: Based on the Gaussian kernel probability distribution (Equation $10$, which can be represented as $P(x) \sim \mathcal{N}(\mu, \sigma^{2})$ where $x$ is the sample, and $\mu$ and $\sigma$ are the mean and standard deviation respectively), $k_1'$ samples are selected from $R_1$ (with a scale of $k_1$). The time complexity of this process is $O(k_1 + k_2)$.
+- **First-stage sampling**: Based on the Gaussian kernel probability distribution (Equation $10$, which can be represented as $P(x) \sim \mathcal{N}(\mu, \sigma^{2})$ where $x$ is the sample, and $\mu$ and $\sigma$ are the mean and standard deviation respectively), $k_1'$ samples are selected from $R_1$ (with a scale of $k_1$). The time complexity of this process is $O(k_1 + k_1')$.
 
 - **Second-stage sampling**: Uniform sampling is performed: based on a uniform distribution (Equation $13$, which can be denoted as $U(a, b)$ representing a uniform distribution over the interval $[a, b]$), $m$ final negative samples are selected from $R_2 \setminus \{d^{+}\}$ (with a scale of $k_2$). This operation only involves random filtering, resulting in a time complexity of $O(n)$.
 
