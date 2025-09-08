@@ -254,3 +254,27 @@ To minimize subjective bias, we adopted a two-layer validation process combining
     - Among samples with consistent LLM annotations, the agreement with the final manual judgments was 82.3%, indicating that LLMs have good reliability in high-confidence scenarios.
     - For all sampled samples, the Cohen’s kappa coefficient between the two annotators was 0.71. 
 
+
+## E. Time Complexity Analysis of the ReSa2 Algorithm
+
+The time complexity of the ReSa2 algorithm is determined by three core operations: ANN index construction, two-stage retrieval, and two-stage sampling. Herein, we assume the employed ANN indexing algorithm is Hierarchical Navigable Small Worlds (HNSW), and conduct a quantitative analysis by leveraging the structural characteristics of HNSW.
+
+### HNSW and Index Construction Complexity
+
+As a mainstream and efficient structure for Approximate Nearest Neighbor (ANN) search, HNSW organizes document vectors (with the total number of documents denoted as $N$) through a hierarchical navigation graph. Its construction process requires dynamic maintenance of connection relationships and node distribution across multiple graph layers, resulting in a time complexity of $O(N \log N)$. This operation dominates the overall time cost of the algorithm: when the document scale $N$ reaches the million or even billion level (e.g., the 8.84 million documents in MS MARCO), the complexity of index construction is far higher than that of other low-order operations, directly determining the upper time limit of the algorithm.
+
+### HNSW Retrieval Performance and Retrieval Complexity
+
+The retrieval performance of HNSW relies on a hierarchical navigation mechanism, which avoids full-scale traversal. Its time complexity is determined by the global scale of the index, being $O(\log N)$ (independent of the number of returned results $k$); thus, the time complexity of both stages in the two-stage retrieval is $O(\log N)$.
+
+### Two-stage Sampling Steps and Corresponding Complexities
+
+Two-stage sampling involves the following steps with distinct time complexities:
+
+- **First-stage sampling**: Based on the Gaussian kernel probability distribution (Equation $10$, which can be represented as $P(x) \sim \mathcal{N}(\mu, \sigma^{2})$ where $x$ is the sample, and $\mu$ and $\sigma$ are the mean and standard deviation respectively), $k_1'$ samples are selected from $R_1$ (with a scale of $k_1$). This process requires traversing the candidate set to calculate the sampling probability of each sample and filter them, leading to a time complexity of $O(k_1)$.
+
+- **Second-stage sampling**: Uniform sampling is performed: based on a uniform distribution (Equation $13$, which can be denoted as $U(a, b)$ representing a uniform distribution over the interval $[a, b]$), $m$ final negative samples are selected from $R_2 \setminus \{d^{+}\}$ (with a scale of $k_2$). This operation only involves random filtering, resulting in a time complexity of $O(n)$.
+
+### Overall Complexity Conclusion
+
+In large-scale document scenarios, the $O(N \log N)$ complexity of HNSW index construction is absolutely dominant. In contrast, the total complexity of the two-stage retrieval $O(\log N)$ and the complexity of the two-stage sampling ($O(k_1) + O(n)$) are both low-order terms (where $k_1$ and $k_2$ are usually much smaller than $N$). Therefore, the overall time complexity of the ReSa2 algorithm is ultimately $O(N \log N)$, which is on the same order of magnitude as that of SimANS and TriSampler. This enables ReSa2 to maintain efficient operation in document corpora ranging from the million to billion levels. 
