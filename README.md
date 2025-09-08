@@ -65,7 +65,7 @@ Enjoy using our code, and feel free to open an issue if you have any questions!
 |  | DPR+SimANS | 0.24889 | 0.33074 | 0.34931 | 0.36272 | 0.37359 |
 |  | DPR+ReSa2 | **0.26895** | **0.35647** | **0.37543** | **0.39032** | **0.40100** |
 | **Recall** | DPR | 0.25381 | 0.44899 | 0.52909 | **0.62865** | 0.83959 |
-|  | DPR+SimANS | 0.24889 | 0.42454 | 0.4978 | 0.58596 | 0.37359 |
+|  | DPR+SimANS | 0.24889 | 0.42454 | 0.4978 | 0.58596 | 0.80927 |
 |  | DPR+ReSa2 | **0.26895** | **0.45553** | **0.53107** | 0.62522 | **0.84323** |
 | **Precision** | DPR | 0.28563 | 0.17285 | 0.12370 | **0.07433** | 0.01011 |
 |  | DPR+SimANS | 0.27723 | 0.16329 | 0.11593 | 0.06909 | 0.00975 |
@@ -78,18 +78,73 @@ Enjoy using our code, and feel free to open an issue if you have any questions!
   <img src="img/negative_sample_classification.png" alt="Description" width="300">
 </p>
 
-<p align="center">
-  <img src="img/LLM.png" alt="Description" width="300">
-</p>
-
- <p align="center">
-  <img src="img/LLM2.png" alt="Description" width="300">
-</p>
  
  
 # Appendix
 
-## Instruction
+## A.Experiment Details
+
+### Negatives Classification
+Due to the increasingly powerful capabilities of large language models and inspired by the manual review of RocketQA, we believe that the metrics for sample sampling algorithms can be implemented by leveraging the model's classification ability for query-sample pairs, combined with manual spot checks to ensure reliability. Meanwhile, the relabeling of datasets by artificial intelligence can alleviate part of the false negative problem, but this does not mean that sampling algorithms lose their value. For extremely large datasets, even if AI reduces costs, the labeling effort remains enormous. Two specific examples are provided in Figure. [llm](img/LLM.png) and Figure. [llm2](img/LLM2.png).
+
+We used DeepSeek-V3-0324 for relevant discrimination and adopted the following prompt:
+
+> **Please judge the relevance between the following paragraph and the query:**
+> 
+> Query: `{query}`
+> 
+> Relevant passage: `{passage_p}`
+> 
+> Paragraph to be judged: `{passage_d}`
+> 
+> **Decision criteria**:
+> - If the paragraph to be judged is closer to the relevant passage than the query, return **False Negative (FN)**.
+> - If the paragraph to be judged is completely irrelevant to the query, return **True Negative (TN)**.
+> - If the paragraph to be judged is irrelevant to the query but relatively close to the correct answer, return **Hard Negative (HN)**.
+> 
+> **Only return FN, TN, or HN without additional information.**
+
+![Example of Analyzing ReSa2 Sampling Results with Large Language Models](img/LLM.png)
+*Figure [llm](image/LLM.png): Example of Analyzing ReSa2 Sampling Results with Large Language Models*
+
+![Example of Analyzing Top-K Sampling Results with Large Language Models](img/LLM2.png)
+*Figure [llm2](image/LLM2.png): Example of Analyzing Top-K Sampling Results with Large Language Models* 
+
+
+### Training Details
+We use a standard DPR model (stdDPR) on the MS MARCO Passage Ranking dataset to obtain hard negative samples. We utilize Tevatron, a Unified Document Retrieval Toolkit, to train the dense retriever for testing the effectiveness of the sampled negative samples.
+
+Based on the bert-base-uncased model, stdDPR is trained on the official triples provided by the MS MARCO Passage Ranking dataset, which consist of negative samples extracted from the top-1000 BM25 retrieval results combined with positive samples. Each training instance consists of one positive sample and seven negative samples, with a maximum query length of 32 and a maximum passage length of 128.
+
+The model is trained for four epochs with a learning rate of 5e-6 and a per-device batch size of 16. For the optimizer, we choose AdamW, and set the weight decay to 0.
+
+We use stdDPR to encode and retrieve on the training set. The process is as follows:
+1. First, we perform the first-stage retrieval using faiss, retrieving the top-1000 ($\mathbf{k_1}$=1000) passages for each query.
+2. Subsequently, we sample from the top-1000 using a probabilistic distribution ($p_s(d^-)$ ), obtaining a subset of $\mathbf{k_1'}$ = 500.
+3. In the second-stage retrieval, we use the positive sample reuse retriever as a filter to reposition the negative samples in the sample pool obtained from the previous stage. We select the top-75 ($\mathbf{k_2}$=75) samples from it and randomly sample seven negative samples for each query to update the training set.
+
+Finally, we use the pre-trained language model `bert-base-uncased` to train a new model with the newly sampled negative samples for four epochs. Then, we take the evaluation metrics of the new model as the criteria to reflect the quality of the negative samples.
+
+To obtain a relatively fair evaluation, the other sampling algorithms we reproduced followed the same process as our sampling algorithm. Specifically:
+- The BM-25 sampling method was trained using the official triples provided.
+- For other sampling methods that we reproduced, negative samples were all extracted from the retrieval results of stdDPR.
+- When training the models, the same base model was used, and hyperparameters such as four training epochs and a learning rate of 5e-6 were set identically.
+- In the evaluation process, the same evaluation metrics, the Mean Reciprocal Rank @10(MRR@10) and Recall@1000, were employed to measure the model performance, thus ensuring that the comparison among different sampling algorithms was based on consistent conditions.
+
+### Parameter Tuning
+In our experiment, the number $n$ of the final negative samples was set to 7, and $k_1$ was fixed at 1000. For the sizes of $S_1$ and $R_1$ in the two-stage sampling, we also have two parameters, $k_1'$ and $k_2$.
+
+We investigated the impact of the changes of these two parameters on the sample quality. The specific details are shown in Fig [can](img/e4.png). It can be seen that:
+- When $k_2$ is fixed, the changes in $k_1'$ have a relatively mild impact on Recall@1000 and MRR@10.
+- When $k_1$ remains unchanged, within a certain range, as $k_2$ decreases, Recall@1000 drops slightly, while MRR@10 increases significantly. When $k_2$ is smaller than this range, both of these two indicators will decline. The reason might be that samples with higher similarity are more likely to be false-negative samples.
+
+![The left subplot represents the performance metrics of the model trained with the data obtained at different values of $k_1'$ during the retrieval sampling in the first stage. In this case, the value of $k_2$ is 75. The right subplot represents the performance metrics of the model trained with the data obtained at different values of $k_2$ during the retrieval sampling in the second stage. Here, the value of $k_1'$ is 500. ](img/e4.png)
+*Figure [can](img/e4.png): Description of the performance metrics under different parameter values in the retrieval sampling process* 
+
+
+
+
+## B.Algorithm Instruction
 In this experiment, we replicated a series of methods and made certain adjustments to their parameters and sequences according to our evaluation criteria to achieve their best performance.
 
 Due to the limited length of the main text, the settings and descriptions of each method are as follows.
@@ -174,3 +229,28 @@ For SimANS, we also tested various parameters and extracted the final negative s
 | **Top 500 SimANS** | 34.8 | 80.3 | 96.0 | 68.2 | 65.2 |
 
 ---
+
+
+## C.Dependence on Dense Retriever Quality
+To verify whether our method is effective on weak retrievers, we conducted relevant experiments. We carried out experiments in a "weak retriever" scenario constructed using BERT-base, a relatively basic pre-trained language model (PLM). To control the quality of the retriever, we sampled 10,000 queries from the original training set to construct a new small dataset, and trained the retriever on this dataset.
+
+Under this setup, the Mean Reciprocal Rank (MRR) metrics of TopK sampling, TriSampler, and our ReSa2 method reached 22.0, 22.7, and 22.9 respectively. This result indicates that our method can still be effective in constrained environments.
+
+| Sampling Method | MRR Metric |
+| ---- | ---- |
+| TopK Sampling | 22.0 |
+| TriSampler | 22.7 |
+| ReSa2 Method | 22.9 |
+
+## D.Subjective Bias in Manual Validation
+To reduce subjective bias in false negative detection, we have supplemented detailed validation procedures and quantitative data.
+
+This false negative detection involved 40,000 query-passage pairs, with annotation tasks categorized into three classes: "False Negative", "True Negative", and "Hard Negative".
+
+To minimize subjective bias, we adopted a two-layer validation process combining "LLM pre-annotation + manual review":
+- First, the LLM independently classified all samples in two rounds. Samples with inconsistent results between the two rounds (6,241 in total, accounting for 15.6% of the total) were fully included in manual review.
+- For samples with consistent LLM annotations across the two rounds (33,759 in total), 20% (6,752 samples) were randomly selected for manual review to ensure coverage.
+- Manual annotations were completed independently by two authors. Samples with inconsistent annotations between the two authors (892 in total, accounting for 9.8% of the manually reviewed samples) were arbitrated by a third author to determine the final labels. According to annotation records:
+    - Among samples with consistent LLM annotations, the agreement with the final manual judgments was 82.3%, indicating that LLMs have good reliability in high-confidence scenarios.
+    - For all sampled samples, the Cohen’s kappa coefficient between the two annotators was 0.71. 
+
